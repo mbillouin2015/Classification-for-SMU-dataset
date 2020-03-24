@@ -1,0 +1,37 @@
+# Compiled python files
+*.pyc
+.pyc
+
+# Idea files
+.idea/tasks
+*.iml
+.idea/*
+.idea/**
+
+# Data files
+*.wav
+*.rdvx
+*.rdvxz
+*.png
+*.tar
+*.gz
+*.csv
+*.sac
+*.iml
+*.orig
+*.jpg
+*.jpeg
+
+# Other files
+*.DS_Store
+*.swp
+.swp
+*.bak
+.env
+
+# Directories
+data/
+scrap/
+build/
+dist/
+
