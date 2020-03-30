@@ -20,7 +20,6 @@ The following list illustrates the tasks that need to be completed:
 
 6. Model Comparisons – All classification metrics are based on model performance on the test set true labels versus the predicted labels by each classifier. 
 
-The expected outcome of this project is to have models that can discriminate between events that produce infrasonic signals with high fidelity and to determine the champion deep learning mo del (model with the highest fidelity) from the models proposed.
 
 The expected outcome of this project is to have trained neural network models that can discriminate between events that produce infrasonic signals with comparable fidelity to other one dimensional datasets. Consequently, we wish to compare the hypothesis generated from the literature review and benchmark test to the results obtained from the experiments. 
 
