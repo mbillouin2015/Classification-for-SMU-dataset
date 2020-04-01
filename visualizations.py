@@ -5,7 +5,7 @@ from mpl_toolkits.basemap import Basemap
 import numpy as np
 
 #df = pd.read_csv(path + 'utah_data.csv')
-df = pd.read_csv('src/SMU_site.csv')
+df = pd.read_csv('meta/SMU_site.csv')
 latmin = min(df['lat']) - 1
 latmax = max(df['lat']) + 0.1
 lomin = min(df['lon']) - 0.1

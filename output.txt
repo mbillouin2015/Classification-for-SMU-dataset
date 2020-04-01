@@ -1,2 +1,27 @@
 INFO: Reading Dataframe.
 INFO: complete
+Out[3]: <matplotlib.axes._subplots.AxesSubplot at 0x21187ebd0>
+Out[5]: 
+40.0     35528
+100.0    17441
+50.0      2128
+200.0      899
+250.0      621
+20.0       372
+500.0       46
+125.0       18
+25.0        15
+Name: hz, dtype: int64
+Out[6]: 
+40.0     35528
+100.0    17441
+50.0      2128
+200.0      899
+250.0      621
+20.0       372
+500.0       46
+125.0       18
+25.0        15
+Name: hz, dtype: int64
+hi
+Out[8]: 'plots/'
