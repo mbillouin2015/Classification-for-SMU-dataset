@@ -5,7 +5,7 @@ import sys
 import pandas as pd
 from obspy.core.trace import Trace
 
-DATADIR = 'data/SMU_V5.pickle'
+DATADIR = 'data/SMU.pickle'
 SAVEDIR = 'plots/'
 
 # sys.stdout = open('output.txt', 'w')
