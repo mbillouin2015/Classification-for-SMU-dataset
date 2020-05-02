@@ -1,4 +1,4 @@
-%matplotlib  qt
+# %matplotlib  qt
 import pandas as pd
 import matplotlib.pyplot as plt
 from mpl_toolkits.basemap import Basemap
@@ -47,14 +47,14 @@ for i in range(len(uttr)):
 
 x,y = m(uttr_origin.iloc[0].lon,uttr_origin.iloc[0].lat)
 plt.scatter(x,y,facecolor='y',edgecolor='k',s=250, zorder = 50000,
-            label='RBD Origin', marker="*")
+            label='UTTR Origin', marker="*")
 
 x,y = m(rmt_origin.iloc[0].lon,rmt_origin.iloc[0].lat)
 plt.scatter(x,y,facecolor='red',edgecolor='k',s=250, zorder = 50000,
             label='RMT Origin', marker="*")
 
 plt.legend(loc=1)
-plt.savefig('figures/smu_site.svg')
+plt.savefig('figures/smu_site.png')
 plt.show()
 
 

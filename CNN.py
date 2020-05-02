@@ -1,20 +1,23 @@
 tensorflow = 0
-
 if tensorflow:
-    from tensorflow.keras.layers import Dense, Conv1D, Conv2D, BatchNormalization, Activation, Flatten, GlobalAveragePooling2D
+    from tensorflow.keras.layers import Dense, Conv1D, BatchNormalization, Flatten, AveragePooling1D
     from tensorflow.keras.models import Sequential
     from tensorflow.keras.optimizers import Adam
     from tensorflow.keras import backend as K
+    from tensorflow.keras.callbacks import ReduceLROnPlateau, EarlyStopping
+
 else:
     import plaidml.keras
     plaidml.keras.install_backend()
     import os
+
     os.environ["KERAS_BACKEND"] = "plaidml.keras.backend"
 
-    from keras.layers import Dense, Conv1D, Conv2D, BatchNormalization, Activation, Flatten, GlobalAveragePooling2D
+    from keras.layers import Dense, Conv1D, BatchNormalization, Flatten, GlobalAveragePooling1D, Activation
     from keras.models import Sequential
     from keras.optimizers import Adam
-    from keras import backend as K
+    # from keras import backend as K
+    from keras.callbacks import ReduceLROnPlateau, EarlyStopping
 
 import numpy as np
 import pandas as pd
@@ -23,6 +26,8 @@ import matplotlib.pyplot as plt
 from sklearn.metrics import classification_report, confusion_matrix
 from sklearn.model_selection import train_test_split
 
+from generateSpectrogram import generateSpectrogramFeatures
+import time
 import seaborn as sns
 
 RESULTSDIR = 'results/CNN/'
@@ -49,6 +54,10 @@ else:
     DATADIR = 'data/smu_resampled_balanced.pickle'
     data = pd.read_pickle(DATADIR)
 
+    float_epsilon = np.finfo(float).eps
+    data['ts'] = data.ts.map(lambda x: (x-x.mean())/(x.std()+float_epsilon))
+    # generateSpectrogramFeatures(data)
+
     x_train, x_test, y_train, y_test = train_test_split(data, data['lbl'], train_size=0.70, random_state=42)
 
     x_train = x_train.ts.values
@@ -66,13 +75,14 @@ x_train = x_train.reshape(x_train.shape + (1,))
 x_test = x_test.reshape(x_test.shape + (1,))
 
 # Model Hyperparameters
-activation = 'relu'
+activation = 'sigmoid'
 batch_size = 16
-optimizer = 'Adam'
+optimizer = Adam()
 padding = 'same'
 loss = 'categorical_crossentropy'
 num_epochs = 20
-init_mode = 'lecun_normal'
+
+# K.clear_session()
 
 model = Sequential()
 
@@ -83,29 +93,22 @@ model.add(Conv1D(filters=256, kernel_size=5, padding=padding, activation=activat
 model.add(BatchNormalization())
 model.add(Conv1D(filters=128, kernel_size=3, padding=padding, activation=activation))
 model.add(BatchNormalization())
-model.add(Flatten())
-# model.add(Dense(50, activation='relu'))
+# model.add(Flatten())
+model.add(GlobalAveragePooling1D())
 model.add(Dense(2, activation='softmax'))
-
-
-# nDims = x_train.shape[1:]
-# model.add(Conv2D(128, (8, 1), input_shape=nDims, padding='same', activation=activation,
-#                  kernel_initializer=init_mode))
-# model.add(BatchNormalization())
-# model.add(Conv2D(256, (5, 1), padding='same', activation=activation, kernel_initializer=init_mode))
-# model.add(BatchNormalization())
-# model.add(Conv2D(256, (3, 1), padding='same', activation=activation, kernel_initializer=init_mode))
-# model.add(BatchNormalization())
-# model.add(GlobalAveragePooling2D())
-# model.add(Dense(units=2, activation='softmax'))
-
 model.compile(loss=loss, optimizer=optimizer, metrics=['accuracy'])
 print(model.summary())
 
+reduce_lr = ReduceLROnPlateau(monitor='loss', factor=0.5, patience=2, min_lr=0.0001)
+es = EarlyStopping(monitor='val_loss', min_delta= 0.1, patience=20, mode='min', verbose=1)
+#
+start_time = time.time()
 
-history = model.fit(x_train, y_train, validation_split=0.25, batch_size=batch_size, epochs=num_epochs)
-# history = model.fit(x_train, y_train, batch_size=batch_size, epochs=num_epochs, verbose=1)
+history = model.fit(x_train, y_train, validation_split=0.2, batch_size=batch_size, epochs=num_epochs,
+                    callbacks=[reduce_lr])
 
+time_elapsed = time.time() - start_time
+print('Total time for training is: ', time_elapsed)
 
 plt.plot(history.history['acc'])
 plt.plot(history.history['val_acc'])
@@ -113,7 +116,7 @@ plt.title('Model accuracy')
 plt.ylabel('Accuracy')
 plt.xlabel('Epoch')
 plt.legend(['Train', 'Validation'], loc='upper left')
-plt.savefig(RESULTSDIR + 'accuracy_curves.png')
+# plt.savefig(RESULTSDIR + 'accuracy_curves.png')
 plt.show()
 
 # Plot training & validation loss values
@@ -123,7 +126,7 @@ plt.title('Model loss')
 plt.ylabel('Loss')
 plt.xlabel('Epoch')
 plt.legend(['Train', 'Validation'], loc='upper left')
-plt.savefig(RESULTSDIR + 'loss_curves.png')
+# plt.savefig(RESULTSDIR + 'loss_curves.png')
 plt.show()
 
 
@@ -137,7 +140,7 @@ tst_lbls = np.argmax(y_test, axis=1)
 report = classification_report(tst_lbls, y_pred, output_dict=True)
 print(report)
 report = pd.DataFrame(report).transpose()
-report.to_csv(RESULTSDIR + 'report.csv')
+# report.to_csv(RESULTSDIR + 'report.csv')
 
 cm = confusion_matrix(tst_lbls, y_pred)
 
@@ -148,5 +151,5 @@ ax.set_xlabel('Predicted label')
 ax.set_ylabel('True label')
 ax.set_title('Confusion Matrix')
 
-plt.savefig(RESULTSDIR + 'confusion_matrix.png')
+# plt.savefig(RESULTSDIR + 'confusion_matrix.png')
 plt.show()

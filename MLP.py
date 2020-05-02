@@ -1,27 +1,27 @@
-import sys
-# sys.stdout = open('output.txt', "w")
-
+import time
 import plaidml.keras
 plaidml.keras.install_backend()
 import os
 os.environ["KERAS_BACKEND"] = "plaidml.keras.backend"
 
 import numpy as np
+from numba import jit
 import pandas as pd
 import matplotlib.pyplot as plt
 from keras.layers import Dense, Dropout
 from keras.models import Sequential
+from keras.callbacks import ReduceLROnPlateau, EarlyStopping
 from keras.optimizers import Adam
 from keras import backend as K
 from sklearn.metrics import classification_report, confusion_matrix
 from sklearn.model_selection import train_test_split
+from generateSpectrogram import generateSpectrogramFeatures
+
 
 import seaborn as sns
 
-
-
 RESULTSDIR = 'results/MLP/'
-NDEBUG = 1
+NDEBUG = 0
 
 if NDEBUG:
     RESULTSDIR += 'baseline/'
@@ -44,10 +44,15 @@ else:
     DATADIR = 'data/smu_resampled_balanced.pickle'
     data = pd.read_pickle(DATADIR)
 
+    float_epsilon = np.finfo(float).eps
+    data['ts'] = data.ts.map(lambda x: (x-x.mean())/(x.std()+float_epsilon))
+
+    # generateSpectrogramFeatures(data)
     x_train, x_test, y_train, y_test = train_test_split(data, data['lbl'], train_size=0.70, random_state=42)
 
     x_train = x_train.ts.values
     x_train = np.array([i for i in x_train])
+
 
     y_train = pd.get_dummies(y_train).values
 
@@ -56,6 +61,8 @@ else:
 
     y_test = pd.get_dummies(y_test).values
 
+
+start_time = time.time()
 
 # Model Hyperparameters
 num_dims = x_train.shape[1]
@@ -66,6 +73,7 @@ num_nodes = 500
 activation = 'relu'
 optimizer = 'Adam'
 
+K.clear_session()
 model = Sequential()
 model.add(Dense(units=num_nodes, input_dim=num_dims, activation=activation))
 model.add(Dropout(0.1))
@@ -74,14 +82,16 @@ model.add(Dropout(0.2))
 model.add(Dense(num_nodes, activation=activation))
 model.add(Dropout(0.2))
 model.add(Dense(num_nodes, activation=activation))
-model.add(Dropout(0.2))
+model.add(Dropout(0.3))
 model.add(Dense(num_classes, activation='softmax'))
 
 model.compile(optimizer=optimizer, loss='categorical_crossentropy', metrics=['accuracy'])
+reduce_lr = ReduceLROnPlateau(monitor='loss', factor=0.5, patience=200, min_lr=0.1)
 print(model.summary())
 
-history = model.fit(x_train, y_train, validation_split=0.25, batch_size=batch_size, epochs=num_epochs, verbose=1)
-# history = model.fit(x_train, y_train, batch_size=batch_size, epochs=num_epochs, verbose=1)
+history = model.fit(x_train, y_train, validation_split=0.2, batch_size=batch_size,
+                    epochs=num_epochs, verbose=1,
+                    callbacks=[reduce_lr])
 
 
 
@@ -128,3 +138,6 @@ ax.set_title('Confusion Matrix')
 
 plt.savefig(RESULTSDIR + 'confusion_matrix.png')
 plt.show()
+
+time_elapsed = time.time() - start_time
+print('Total time for training is: ', time_elapsed)
